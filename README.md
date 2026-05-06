@@ -32,10 +32,7 @@ pip install -e ".[dev]"
 cp .env.example .env
 # Edit .env with your DeepSeek API key if using remote embeddings/chat
 
-# 4. Run migrations
-alembic upgrade head
-
-# 5. Start the API
+# 4. Start the API (migrations run automatically on startup)
 uvicorn app.main:app --reload
 ```
 
