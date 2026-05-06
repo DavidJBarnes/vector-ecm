@@ -10,10 +10,10 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = (
-        "postgresql+asyncpg://vectorcms:vectorcms@localhost:5433/vectorcms"
+        "postgresql+asyncpg://vectorcms:vectorcms@127.0.0.1:5433/vectorcms"
     )
     database_url_sync: str = (
-        "postgresql+psycopg2://vectorcms:vectorcms@localhost:5433/vectorcms"
+        "postgresql+psycopg2://vectorcms:vectorcms@127.0.0.1:5433/vectorcms"
     )
 
     # Embedding

@@ -97,9 +97,11 @@ async def delete_document(
     await service.delete_document(db, document_id)
 
 
-def _doc_to_response(doc) -> DocumentResponse:
-    from app.schemas.document import ChunkResponse
+from sqlalchemy.orm import object_session
 
+
+def _doc_to_response(doc) -> DocumentResponse:
+    chunk_count = _count_chunks(doc)
     return DocumentResponse(
         id=doc.id,
         collection_id=doc.collection_id,
@@ -108,13 +110,14 @@ def _doc_to_response(doc) -> DocumentResponse:
         metadata=doc.metadata_,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
-        chunk_count=len(doc.chunks) if doc.chunks else 0,
+        chunk_count=chunk_count,
     )
 
 
 def _doc_with_chunks_to_response(doc) -> DocumentWithChunks:
     from app.schemas.document import ChunkResponse
 
+    chunk_count = _count_chunks(doc)
     return DocumentWithChunks(
         id=doc.id,
         collection_id=doc.collection_id,
@@ -123,7 +126,7 @@ def _doc_with_chunks_to_response(doc) -> DocumentWithChunks:
         metadata=doc.metadata_,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
-        chunk_count=len(doc.chunks) if doc.chunks else 0,
+        chunk_count=chunk_count,
         chunks=[
             ChunkResponse(
                 id=c.id,
@@ -135,3 +138,12 @@ def _doc_with_chunks_to_response(doc) -> DocumentWithChunks:
             for c in (doc.chunks or [])
         ],
     )
+
+
+def _count_chunks(doc) -> int:
+    from sqlalchemy import inspect
+
+    insp = inspect(doc)
+    if "chunks" in insp.unloaded:
+        return 0
+    return len(doc.chunks) if doc.chunks else 0

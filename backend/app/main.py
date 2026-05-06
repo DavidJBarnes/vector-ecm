@@ -1,9 +1,8 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from alembic import command
-from alembic.config import Config
 from fastapi import FastAPI
 
 from app.database import engine
@@ -18,21 +17,26 @@ logger = logging.getLogger("vectorcms")
 
 
 def run_migrations() -> None:
-    alembic_cfg = Config(Path(__file__).parent.parent / "alembic.ini")
-    alembic_cfg.set_main_option(
-        "script_location", str(Path(__file__).parent.parent / "migrations")
+    import subprocess
+    import sys
+
+    backend_dir = str(Path(__file__).parent.parent)
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=backend_dir,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
-    try:
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Migrations applied successfully")
-    except Exception as e:
-        logger.error("Migration failed: %s", e)
-        raise
+    if result.returncode != 0:
+        logger.error("Migration failed:\n%s\n%s", result.stdout, result.stderr)
+        raise RuntimeError(f"Migration failed: {result.stderr}")
+    logger.info("Migrations applied successfully")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    run_migrations()
+    await asyncio.to_thread(run_migrations)
     yield
     await engine.dispose()
 

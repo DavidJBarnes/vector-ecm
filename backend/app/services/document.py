@@ -54,13 +54,14 @@ class DocumentService:
 
         query = (
             select(Document)
+            .options(selectinload(Document.chunks))
             .where(Document.collection_id == collection_id)
             .order_by(Document.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
         result = await session.execute(query)
-        documents = list(result.scalars().all())
+        documents = list(result.unique().scalars().all())
 
         return documents, total
 
