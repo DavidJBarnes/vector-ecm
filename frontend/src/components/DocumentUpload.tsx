@@ -1,7 +1,7 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
 
 interface Props {
-  onUpload: (title: string, content: string) => Promise<void>
+  onUpload: (file: File) => Promise<void>
   uploading: boolean
 }
 
@@ -40,21 +40,10 @@ export default function DocumentUpload({ onUpload, uploading }: Props) {
     if (selected) setFile(selected)
   }
 
-  const readFile = (f: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsText(f)
-    })
-  }
-
   const handleSubmit = async () => {
     if (!file) return
     try {
-      const content = await readFile(file)
-      const title = file.name.replace(/\.[^/.]+$/, '')
-      await onUpload(title, content)
+      await onUpload(file)
       setFile(null)
       if (fileInput.current) fileInput.current.value = ''
     } catch {
@@ -99,7 +88,7 @@ export default function DocumentUpload({ onUpload, uploading }: Props) {
         <div className="space-y-2">
           <p className="text-gray-300 font-medium">Drop a file here</p>
           <p className="text-gray-500 text-sm">or click to browse</p>
-          <p className="text-gray-600 text-xs">TXT, MD, CSV, JSON, HTML, XML</p>
+          <p className="text-gray-600 text-xs">TXT, MD, CSV, JSON, HTML, XML, PDF</p>
         </div>
       )}
     </div>

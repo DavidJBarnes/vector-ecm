@@ -28,6 +28,19 @@ export const api = {
     request<import('../types').Document & { chunks: unknown[] }>(`/collections/${collectionId}/documents/${docId}`),
   createDocument: (collectionId: string, data: { title: string; content: string; metadata?: Record<string, unknown> }) =>
     request<import('../types').Document>(`/collections/${collectionId}/documents`, { method: 'POST', body: JSON.stringify(data) }),
+  uploadDocument: async (collectionId: string, file: File): Promise<import('../types').Document> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${BASE}/collections/${collectionId}/documents/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throw new Error(err.detail || 'Upload failed')
+    }
+    return res.json()
+  },
   deleteDocument: (collectionId: string, docId: string) =>
     request<void>(`/collections/${collectionId}/documents/${docId}`, { method: 'DELETE' }),
 

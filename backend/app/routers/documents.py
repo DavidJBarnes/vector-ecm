@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -12,6 +12,7 @@ from app.schemas.document import (
     DocumentWithChunks,
 )
 from app.services.document import get_document_service
+from app.services.extraction import get_file_extraction_service
 
 router = APIRouter(prefix="/collections/{collection_id}/documents", tags=["documents"])
 
@@ -24,6 +25,33 @@ async def verify_collection(db: AsyncSession, collection_id: uuid.UUID):
     )
     if result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Collection not found")
+
+
+@router.post("/upload", response_model=DocumentResponse, status_code=201)
+async def upload_document(
+    collection_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    await verify_collection(db, collection_id)
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    content_bytes = await file.read()
+
+    extraction = get_file_extraction_service()
+    extracted = extraction.extract(file.filename, content_bytes)
+
+    if not extracted.content.strip():
+        raise HTTPException(status_code=400, detail="No extractable text found in file")
+
+    service = get_document_service()
+    document = await service.create_document(
+        db,
+        collection_id,
+        DocumentCreate(title=extracted.title, content=extracted.content),
+    )
+    return _doc_to_response(document)
 
 
 @router.post("", response_model=DocumentResponse, status_code=201)

@@ -48,12 +48,12 @@ export default function DocumentsPage() {
     })
   }, [ensureCollection, loadDocuments])
 
-  const handleUpload = async (title: string, content: string) => {
+  const handleUpload = async (file: File) => {
     if (!collectionId) return
     setUploading(true)
     setError(null)
     try {
-      await api.createDocument(collectionId, { title, content })
+      await api.uploadDocument(collectionId, file)
       await loadDocuments(collectionId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
