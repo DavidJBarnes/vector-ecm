@@ -38,6 +38,17 @@ uvicorn app.main:app --reload
 
 API docs at http://localhost:8000/docs
 
+```bash
+# 5. Install frontend dependencies (separate terminal)
+cd frontend
+npm install
+
+# 6. Start the frontend dev server
+npm run dev
+```
+
+UI at http://localhost:5173 (proxies `/api` to the backend)
+
 ## API Endpoints
 
 ### Collections
