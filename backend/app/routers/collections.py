@@ -21,8 +21,12 @@ async def create_collection(data: CollectionCreate, db: AsyncSession = Depends(g
     existing = await db.execute(
         select(Collection).where(Collection.name == data.name)
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Collection name already exists")
+    existing_col = existing.scalar_one_or_none()
+    if existing_col:
+        count_result = await db.execute(
+            select(func.count(Document.id)).where(Document.collection_id == existing_col.id)
+        )
+        return _to_response(existing_col, count_result.scalar() or 0)
 
     collection = Collection(
         name=data.name,

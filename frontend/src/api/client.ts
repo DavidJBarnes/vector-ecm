@@ -57,4 +57,23 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message, top_k: topK }),
     }),
+
+  chatStream: async (collectionId: string, message: string, signal?: AbortSignal) => {
+    const res = await fetch(`${BASE}/collections/${collectionId}/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+      signal,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throw new Error(err.detail || 'Chat request failed')
+    }
+    return res.body!.getReader()
+  },
+
+  // Settings
+  getSettings: () => request<import('../types').Settings>('/settings'),
+  updateSettings: (data: Partial<import('../types').Settings>) =>
+    request<import('../types').Settings>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
 }

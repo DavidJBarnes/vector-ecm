@@ -21,6 +21,12 @@ export default function Layout() {
               <NavLink to="/search" className={linkClass}>
                 Search
               </NavLink>
+              <NavLink to="/chat" className={linkClass}>
+                Chat
+              </NavLink>
+              <NavLink to="/settings" className={linkClass}>
+                Settings
+              </NavLink>
             </div>
           </div>
         </div>

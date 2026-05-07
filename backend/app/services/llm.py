@@ -6,7 +6,7 @@ from app.config import get_settings
 from app.services.search import get_search_service
 
 
-SYSTEM_PROMPT = """You are a helpful assistant answering questions about documents in a CMS.
+DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant answering questions about documents in a CMS.
 Use the provided document chunks to answer the user's question.
 If the chunks don't contain enough information, say so honestly.
 Always cite which documents you're drawing from when possible.
@@ -16,20 +16,17 @@ Be concise and accurate."""
 class LLMService:
     def __init__(self):
         settings = get_settings()
-        self.provider = settings.llm_provider
         self.model = settings.chat_model
         self.max_tokens = settings.chat_max_tokens
         self.temperature = settings.chat_temperature
-        self._client = None
+        self.provider = settings.llm_provider
 
-    def _get_client(self) -> AsyncOpenAI:
-        if self._client is None:
-            settings = get_settings()
-            self._client = AsyncOpenAI(
-                api_key=settings.deepseek_api_key,
-                base_url=settings.deepseek_base_url,
-            )
-        return self._client
+    def _build_client(self, api_key: str | None = None, base_url: str | None = None) -> AsyncOpenAI:
+        settings = get_settings()
+        return AsyncOpenAI(
+            api_key=api_key or settings.deepseek_api_key,
+            base_url=base_url or settings.deepseek_base_url,
+        )
 
     async def chat(
         self,
@@ -39,17 +36,27 @@ class LLMService:
         top_k: int = 5,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        runtime: dict | None = None,
     ) -> dict:
-        # Search for relevant chunks
+        rt = runtime or {}
+
+        settings = get_settings()
+        model = rt.get("chat_model") or self.model
+        system_text = rt.get("system_prompt") or DEFAULT_SYSTEM_PROMPT
+        api_key = rt.get("api_key") or settings.deepseek_api_key
+        base_url = rt.get("base_url") or settings.deepseek_base_url
+        effective_top_k = top_k or int(rt.get("top_k", settings.search_default_top_k))
+        effective_temp = temperature if temperature is not None else float(rt.get("temperature", self.temperature))
+        effective_max = max_tokens or int(rt.get("max_tokens", self.max_tokens))
+
         search_service = get_search_service()
         results = await search_service.semantic_search(
             session=session,
             collection_id=collection_id,
             query=message,
-            top_k=top_k,
+            top_k=effective_top_k,
         )
 
-        # Build context from retrieved chunks
         context_parts = []
         for r in results:
             context_parts.append(
@@ -57,21 +64,20 @@ class LLMService:
             )
         context = "\n\n".join(context_parts) if context_parts else "No relevant documents found."
 
-        # Build messages for the LLM
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_text},
             {
                 "role": "user",
                 "content": f"Context from documents:\n\n{context}\n\nQuestion: {message}",
             },
         ]
 
-        client = self._get_client()
+        client = self._build_client(api_key=api_key, base_url=base_url)
         response = await client.chat.completions.create(
-            model=self.model,
+            model=model,
             messages=messages,
-            temperature=temperature or self.temperature,
-            max_tokens=max_tokens or self.max_tokens,
+            temperature=effective_temp,
+            max_tokens=effective_max,
         )
 
         answer = response.choices[0].message.content or ""
@@ -87,11 +93,7 @@ class LLMService:
             for r in results
         ]
 
-        return {
-            "answer": answer,
-            "sources": sources,
-            "model": self.model,
-        }
+        return {"answer": answer, "sources": sources, "model": model}
 
     async def chat_stream(
         self,
@@ -101,13 +103,25 @@ class LLMService:
         top_k: int = 5,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        runtime: dict | None = None,
     ):
+        rt = runtime or {}
+
+        settings = get_settings()
+        model = rt.get("chat_model") or self.model
+        system_text = rt.get("system_prompt") or DEFAULT_SYSTEM_PROMPT
+        api_key = rt.get("api_key") or settings.deepseek_api_key
+        base_url = rt.get("base_url") or settings.deepseek_base_url
+        effective_top_k = top_k or int(rt.get("top_k", settings.search_default_top_k))
+        effective_temp = temperature if temperature is not None else float(rt.get("temperature", self.temperature))
+        effective_max = max_tokens or int(rt.get("max_tokens", self.max_tokens))
+
         search_service = get_search_service()
         results = await search_service.semantic_search(
             session=session,
             collection_id=collection_id,
             query=message,
-            top_k=top_k,
+            top_k=effective_top_k,
         )
 
         context_parts = []
@@ -118,23 +132,22 @@ class LLMService:
         context = "\n\n".join(context_parts) if context_parts else "No relevant documents found."
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_text},
             {
                 "role": "user",
                 "content": f"Context from documents:\n\n{context}\n\nQuestion: {message}",
             },
         ]
 
-        client = self._get_client()
+        client = self._build_client(api_key=api_key, base_url=base_url)
         stream = await client.chat.completions.create(
-            model=self.model,
+            model=model,
             messages=messages,
-            temperature=temperature or self.temperature,
-            max_tokens=max_tokens or self.max_tokens,
+            temperature=effective_temp,
+            max_tokens=effective_max,
             stream=True,
         )
 
-        # Yield sources first as a JSON event, then content chunks
         import json
 
         sources = [
@@ -148,7 +161,7 @@ class LLMService:
             for r in results
         ]
 
-        yield f"data: {json.dumps({'type': 'sources', 'sources': sources, 'model': self.model})}\n\n"
+        yield f"data: {json.dumps({'type': 'sources', 'sources': sources, 'model': model})}\n\n"
 
         async for chunk in stream:
             if chunk.choices[0].delta.content:

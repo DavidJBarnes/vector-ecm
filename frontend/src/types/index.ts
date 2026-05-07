@@ -46,3 +46,19 @@ export interface ChatResponse {
   }[]
   model: string
 }
+
+export interface Settings {
+  api_key: string
+  base_url: string
+  chat_model: string
+  temperature: number
+  max_tokens: number
+  top_k: number
+  system_prompt: string
+}
+
+export interface Message {
+  role: 'user' | 'assistant'
+  content: string
+  sources?: { document_title: string; chunk_index: number; score: number }[]
+}

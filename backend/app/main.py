@@ -11,6 +11,7 @@ from app.routers import (
     collections_router,
     documents_router,
     search_router,
+    settings_router,
 )
 
 logger = logging.getLogger("vector-ecm")
@@ -52,6 +53,7 @@ app.include_router(collections_router)
 app.include_router(documents_router)
 app.include_router(search_router)
 app.include_router(chat_router)
+app.include_router(settings_router)
 
 
 @app.get("/health")

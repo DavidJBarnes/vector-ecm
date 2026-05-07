@@ -7,10 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.collection import Collection
+from app.models.setting import Setting
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.llm import get_llm_service
 
 router = APIRouter(prefix="/collections/{collection_id}/chat", tags=["chat"])
+
+
+async def _get_runtime_settings(db: AsyncSession) -> dict:
+    result = await db.execute(select(Setting))
+    return {r.key: r.value for r in result.scalars().all()}
 
 
 @router.post("", response_model=ChatResponse)
@@ -25,6 +31,7 @@ async def chat(
     if collection.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Collection not found")
 
+    runtime = await _get_runtime_settings(db)
     llm = get_llm_service()
     result = await llm.chat(
         session=db,
@@ -33,6 +40,7 @@ async def chat(
         top_k=req.top_k,
         temperature=req.temperature,
         max_tokens=req.max_tokens,
+        runtime=runtime,
     )
 
     return ChatResponse(
@@ -54,6 +62,7 @@ async def chat_stream(
     if collection.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Collection not found")
 
+    runtime = await _get_runtime_settings(db)
     llm = get_llm_service()
     return StreamingResponse(
         llm.chat_stream(
@@ -63,6 +72,7 @@ async def chat_stream(
             top_k=req.top_k,
             temperature=req.temperature,
             max_tokens=req.max_tokens,
+            runtime=runtime,
         ),
         media_type="text/event-stream",
     )

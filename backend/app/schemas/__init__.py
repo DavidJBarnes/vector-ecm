@@ -16,6 +16,7 @@ from app.schemas.search import (
     SearchResponse,
 )
 from app.schemas.chat import ChatRequest, ChatResponse
+from app.schemas.setting import SettingsResponse, SettingsUpdate
 
 __all__ = [
     "CollectionCreate",
@@ -31,4 +32,6 @@ __all__ = [
     "SearchResponse",
     "ChatRequest",
     "ChatResponse",
+    "SettingsResponse",
+    "SettingsUpdate",
 ]
