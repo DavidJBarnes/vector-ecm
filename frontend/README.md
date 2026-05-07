@@ -1,4 +1,4 @@
-# VectorCMS Frontend
+# Vector ECM Frontend
 
 React + Vite + TypeScript + Tailwind CSS.
 

@@ -1,13 +1,13 @@
-# VectorCMS
+# Vector ECM
 
-Probabilistic document retrieval with semantic search.
+Enterprise content management with semantic search.
 
-[github.com/DavidJBarnes/vectorcms](https://github.com/DavidJBarnes/vectorcms)
+[github.com/DavidJBarnes/vector-ecm](https://github.com/DavidJBarnes/vector-ecm)
 
 ## Architecture
 
 ```
-vectorcms/
+vector-ecm/
 ├── backend/          # FastAPI + PostgreSQL/pgvector
 │   ├── app/
 │   │   ├── models/   # SQLAlchemy ORM (collections, documents, chunks)

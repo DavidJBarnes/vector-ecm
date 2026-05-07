@@ -1,7 +1,7 @@
 [project]
-name = "vectorcms"
+name = "vector-ecm"
 version = "0.1.0"
-description = "VectorCMS - Probabilistic document retrieval with semantic search"
+description = "Vector ECM - Enterprise content management with semantic search"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",

@@ -13,7 +13,7 @@ from app.routers import (
     search_router,
 )
 
-logger = logging.getLogger("vectorcms")
+logger = logging.getLogger("vector-ecm")
 
 
 def run_migrations() -> None:
@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="VectorCMS",
-    description="Probabilistic document retrieval with semantic search",
+    title="Vector ECM",
+    description="Enterprise content management with semantic search",
     version="0.1.0",
     lifespan=lifespan,
 )
